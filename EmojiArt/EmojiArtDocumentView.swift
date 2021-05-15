@@ -34,8 +34,18 @@ struct EmojiArtDocumentView: View {
     
                     ForEach (self.document.emojis) { emoji in
                         Text(emoji.text)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .stroke(lineWidth: 2)
+                                    .opacity( self.document.selectedEmojis.contains(emoji) ? 1 : 0 )
+                            )
                             .font(animatableWithSize: emoji.fontSize * self.zoomScale )
                             .position(self.position(for: emoji, in: geometry.size))
+                            .onTapGesture {
+                                self.document.selectedEmojis.contains(emoji)
+                                    ? self.document.deselectEmoji(emoji)
+                                    : self.document.selectEmoji(emoji)
+                            }
                     }
                 }
                 .clipped()

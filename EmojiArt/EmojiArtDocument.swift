@@ -26,6 +26,7 @@ class EmojiArtDocument: ObservableObject {
     }
     
     var emojis: [EmojiArt.Emoji] { emojiArt.emojis }
+    var selectedEmojis: Set<EmojiArt.Emoji> { emojiArt.selectedEmojis }
     
     // MARK: - Intents
     
@@ -44,6 +45,14 @@ class EmojiArtDocument: ObservableObject {
         if let index = emojiArt.emojis.firstIndex(matching: emoji) {
             emojiArt.emojis[index].size = Int((CGFloat(emojiArt.emojis[index].size) * scale).rounded(.toNearestOrEven))
         }
+    }
+    
+    func selectEmoji(_ emoji: EmojiArt.Emoji) {
+        emojiArt.selectEmoji(emoji)
+    }
+    
+    func deselectEmoji(_ emoji: EmojiArt.Emoji) {
+        emojiArt.deselectEmoji(emoji)
     }
     
     func setBackgroundURL(_ url: URL?) {
