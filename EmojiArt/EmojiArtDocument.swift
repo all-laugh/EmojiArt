@@ -47,6 +47,12 @@ class EmojiArtDocument: ObservableObject {
         }
     }
     
+    func moveEmojiSelection(by offset: CGSize) {
+        for emoji in self.selectedEmojis {
+            moveEmoji(emoji, by: offset)
+        }
+    }
+    
     func scaleEmojiForSelection(by scale: CGFloat) {
         for emoji in self.selectedEmojis {
             scaleEmoji(emoji, by: scale)

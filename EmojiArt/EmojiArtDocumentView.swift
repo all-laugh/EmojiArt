@@ -52,6 +52,7 @@ struct EmojiArtDocumentView: View {
                             .onTapGesture {
                                 self.document.selectedEmojis.toggleMatching(emoji)
                             }
+                            .gesture(self.selectionPanGesture())
                     }
                 }
                 .clipped()
@@ -123,6 +124,24 @@ struct EmojiArtDocumentView: View {
             }
     }
     
+    @State private var steadyStateSelectionPanOffset: CGSize = .zero
+    @GestureState private var gestureSelectionPanOffset: CGSize = .zero
+    
+    private var selectionPanOffset: CGSize {
+        (steadyStateSelectionPanOffset + gestureSelectionPanOffset) * selectionZoomScale
+    }
+    
+    private func selectionPanGesture() -> some Gesture {
+        DragGesture()
+            .updating($gestureSelectionPanOffset) { latestGestureDragValue, gestureSelectionPanOffset, transaction in
+                gestureSelectionPanOffset = latestGestureDragValue.translation / self.zoomScale
+            }
+            .onEnded { finalPanOffset in
+//                self.steadyStateSelectionPanOffset = self.steadyStateSelectionPanOffset + (finalPanOffset.translation / self.zoomScale)
+                self.document.moveEmojiSelection(by: finalPanOffset.translation)
+            }
+    }
+    
     private func singleTapToClearSelection() -> some Gesture {
         TapGesture(count: 1)
             .onEnded { _ in
@@ -152,7 +171,13 @@ struct EmojiArtDocumentView: View {
     private func position(for emoji: EmojiArt.Emoji, in size: CGSize) -> CGPoint {
         var location = CGPoint(x: emoji.location.x * zoomScale, y: emoji.location.y * zoomScale)
         location = CGPoint(x: location.x + size.width/2, y: location.y + size.height/2)
-        location = CGPoint(x: location.x + self.panOffset.width, y: location.y + self.panOffset.height)
+        if self.selectionActive() {
+            location = isSelected(emoji)
+                ? CGPoint(x: location.x + self.selectionPanOffset.width, y: location.y + self.selectionPanOffset.height)
+                : CGPoint(x: location.x + self.steadyStateSelectionPanOffset.width, y: location.y + self.steadyStateSelectionPanOffset.height)
+        } else {
+            location = CGPoint(x: location.x + self.panOffset.width, y: location.y + self.panOffset.height)
+        }
         return location
     }
     
