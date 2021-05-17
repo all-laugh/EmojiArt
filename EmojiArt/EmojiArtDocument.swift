@@ -26,8 +26,8 @@ class EmojiArtDocument: ObservableObject {
     }
     
     var emojis: [EmojiArt.Emoji] { emojiArt.emojis }
-    var selectedEmojis: Set<EmojiArt.Emoji> { emojiArt.selectedEmojis }
-    
+    @Published var selectedEmojis = Set<EmojiArt.Emoji>()
+
     // MARK: - Intents
     
     func addEmoji(_ emoji: String, at location: CGPoint, size: CGFloat) {
@@ -47,12 +47,22 @@ class EmojiArtDocument: ObservableObject {
         }
     }
     
+    func scaleEmojiForSelection(by scale: CGFloat) {
+        for emoji in self.selectedEmojis {
+            scaleEmoji(emoji, by: scale)
+        }
+    }
+    
     func selectEmoji(_ emoji: EmojiArt.Emoji) {
-        emojiArt.selectEmoji(emoji)
+        self.selectedEmojis.insert(emoji)
     }
     
     func deselectEmoji(_ emoji: EmojiArt.Emoji) {
-        emojiArt.deselectEmoji(emoji)
+        self.selectedEmojis.remove(emoji)
+    }
+    
+    func clearSelection() {
+        self.selectedEmojis.removeAll()
     }
     
     func setBackgroundURL(_ url: URL?) {
@@ -77,7 +87,7 @@ class EmojiArtDocument: ObservableObject {
 }
 
 extension EmojiArt.Emoji {
-    var fontSize: CGFloat { CGFloat(self.size)}
+    var fontSize: CGFloat { CGFloat(self.size) }
     var location: CGPoint { CGPoint(x: CGFloat(x), y: CGFloat(y))}
 }
 
