@@ -42,17 +42,21 @@ struct EmojiArtDocumentView: View {
                             .font(animatableWithSize: emoji.fontSize * (self.selectionActive()
                                     ? self.selectionZoomScale(for: emoji)
                                     : self.zoomScale ))
+//                            .background(self.isSelected(emoji)
+//                                            ? ( self.isDetectingLongPress ? Color.yellow : (self.completedLongPress ? .red : .clear) )
+//                                            : .clear)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 15)
                                     .stroke(lineWidth: 2)
                                     .opacity( self.document.selectedEmojis.contains(matching: emoji) ? 1 : 0)
                             )
-
                             .position(self.position(for: emoji, in: geometry.size))
                             .onTapGesture {
                                 self.document.selectedEmojis.toggleMatching(emoji)
                             }
                             .gesture(self.selectionPanGesture())
+                            .gesture(self.longPress(emoji))
+                            
                     }
                 }
                 .clipped()
@@ -68,6 +72,8 @@ struct EmojiArtDocumentView: View {
             }
         }
     }
+    
+    // MARK: - Zoom
     
     @State private var steadyStateZoomScale: CGFloat = 1.0
 
@@ -107,6 +113,8 @@ struct EmojiArtDocumentView: View {
 
     }
     
+    // MARK: - Pan
+    
     @State private var steadyStatePanOffset: CGSize = .zero
     @GestureState private var gesturePanOffset: CGSize = .zero
     
@@ -134,13 +142,14 @@ struct EmojiArtDocumentView: View {
     private func selectionPanGesture() -> some Gesture {
         DragGesture()
             .updating($gestureSelectionPanOffset) { latestGestureDragValue, gestureSelectionPanOffset, transaction in
-                gestureSelectionPanOffset = latestGestureDragValue.translation / self.zoomScale
+                gestureSelectionPanOffset = latestGestureDragValue.translation / self.selectionZoomScale
             }
             .onEnded { finalPanOffset in
-//                self.steadyStateSelectionPanOffset = self.steadyStateSelectionPanOffset + (finalPanOffset.translation / self.zoomScale)
-                self.document.moveEmojiSelection(by: finalPanOffset.translation)
+                self.document.moveEmojiSelection(by: finalPanOffset.translation / self.selectionZoomScale)
             }
     }
+    
+    // MARK: - TAP
     
     private func singleTapToClearSelection() -> some Gesture {
         TapGesture(count: 1)
@@ -168,17 +177,42 @@ struct EmojiArtDocumentView: View {
         }
     }
     
+    // MARK: - Long Press
+    @GestureState var isDetectingLongPress = false
+    @State var completedLongPress = false
+    
+    private func longPress(_ emoji: EmojiArt.Emoji) -> some Gesture {
+        LongPressGesture(minimumDuration: 1)
+            .updating($isDetectingLongPress) { currentState, isDetectingLongPress, transaction in
+                isDetectingLongPress = currentState
+            }
+            .onEnded { finished in
+//                self.completedLongPress = finished
+                self.document.removeEmoji(emoji)
+
+            }
+    }
+    
+    // MARK: - Helper Functions
     private func position(for emoji: EmojiArt.Emoji, in size: CGSize) -> CGPoint {
         var location = CGPoint(x: emoji.location.x * zoomScale, y: emoji.location.y * zoomScale)
         location = CGPoint(x: location.x + size.width/2, y: location.y + size.height/2)
+        location = CGPoint(x: location.x + self.panOffset.width, y: location.y + self.panOffset.height)
         if self.selectionActive() {
             location = isSelected(emoji)
                 ? CGPoint(x: location.x + self.selectionPanOffset.width, y: location.y + self.selectionPanOffset.height)
                 : CGPoint(x: location.x + self.steadyStateSelectionPanOffset.width, y: location.y + self.steadyStateSelectionPanOffset.height)
-        } else {
-            location = CGPoint(x: location.x + self.panOffset.width, y: location.y + self.panOffset.height)
         }
+//        else {
+//            location = CGPoint(x: location.x + self.panOffset.width, y: location.y + self.panOffset.height)
+//        }
+        
+        if location.x < 0 || location.y < 0 {
+            self.document.removeEmoji(emoji)
+        }
+        
         return location
+        
     }
     
     private func drop(providers:[NSItemProvider], at location: CGPoint) -> Bool {
